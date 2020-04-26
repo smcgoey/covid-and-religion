@@ -246,12 +246,12 @@ But which of these areas could be vulnerable as the hot spots of the *future*? L
 high_adherence_low_congregation <- county_covid_religion %>%
   filter(religious_adherence >= quantile(county_covid_religion$religious_adherence, probs = 0.80)) %>%
   filter(congregations_per_10k <= quantile(county_covid_religion$congregations_per_10k, probs = 0.20)) %>%
-  filter(cases_per_10k <= quantile(county_covid_religion$cases_per_10k, probs = 0.80)) %>%
-  select(fips, county, state, population, religious_adherence, congregations_per_10k, key) %>%
+  filter(cases_per_10k <= quantile(county_covid_religion$cases_per_10k, probs = 0.85)) %>%
+  select(county, state, population, religious_adherence, congregations, congregations_per_10k, fips, key) %>%
   arrange(desc(religious_adherence))
 
 high_adherence_low_congregation
 
 ```
 
-Here, we see that Bristol County, Rhode Island, may be particularly vulnerable to a future outbreak once the state reopens. It's part of the Providence metropolitan area, a county where over 70% of the residents are part of the Catholic Church, and packs its nearly 42,000 religious adherents into just 25 total congregations -- an average congregation size of more than 1,600 people.
+**FINDINGS BASED ON THE COUNTIES THAT RESULT FROM THIS ANALYSIS**
