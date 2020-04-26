@@ -1,10 +1,9 @@
-# covid-and-religion
+# COVID-19 and Religion
 Exploring the intersection between rate of religious adherence and confirmed COVID-19 cases
 
-*Project by: **Sean McGoey***
-*JOUR772: Data Journalism (Spring 2020)*
-*Philip Merrill College of Journalism*
-*University of Maryland*
+Project by Sean McGoey for JOUR772: Data Journalism (Spring 2020)
+
+Philip Merrill College of Journalism, University of Maryland
 
 ## Research question
 On a population-adjusted basis, have counties with higher rates of religious adherence seen more outbreaks of COVID-19?
