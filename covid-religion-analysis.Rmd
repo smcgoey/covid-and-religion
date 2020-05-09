@@ -50,7 +50,7 @@ acs_variables <- load_variables(2017, "acs5" )
 
 # Pull in shifted geodata
 county_geodata_shifted <- get_acs(geography = "county",
-              variables = "B01001_001", geometry = TRUE, shift_geo = TRUE)
+              variables = c("B01001_001"), geometry = TRUE, shift_geo = TRUE)
 
 ```
 
@@ -151,7 +151,7 @@ cor.test(correlation_covid_adherents$religious_adherence, correlation_covid_adhe
 
 ```
 
-Okay, so there's really nothing there to suggest that there's a link between the most religious counties in the U.S. and the cases of COVID-19 that have been confirmed so far.
+Okay, so there's really nothing there to suggest that there's a link between the most religious counties in the U.S. and the cases of COVID-19 that have been confirmed so far. That makes some sense: according to mobile location tracking data from SafeGraph, church attendance is down an average of 76% nationwide since the first week of March, so places of worship have had limited opportunity to be spreading grounds.
 
 ## Second variable: Concentration of religious adherents
 
@@ -187,9 +187,9 @@ geo_county_covid_religion %>%
   
 ```
 
-Still more congregations per 10K in the South/Plains areas -- less on the coasts and in major population centers.
+Still more congregations per 10K in the South/Plains areas -- fewer on the coasts and in major population centers.
 
-Now we're going to plot religious adherence percentage against peak confirmed cases (per 10,000 residents).
+Now we're going to plot congregations per 10,000 against peak confirmed cases per 10,000.
 
 ```{r}
 
@@ -217,11 +217,11 @@ cor.test(correlation_covid_religion$congregations_per_10k, correlation_covid_rel
 
 ```
 
-So it's not a strong correlation, but it is statistically significant. Counties where there are fewer congregations per 10,000 residents are a little bit more likely to have already experienced coronavirus outbreaks. That makes some sense; fewer congregations means that the religious adherents in a given county are more concentrated into the same worship spaces.
+So it's not a strong correlation, but it is statistically significant. Counties where there are fewer congregations per 10,000 residents are slightly more likely to have already experienced coronavirus outbreaks. That makes some sense; fewer congregations means that the religious adherents in a given county are more concentrated into the same worship spaces.
 
 ## Looking to the future
 
-So maybe there's not a large correlation between religious adherence or congregations per 10,000 residents and confirmed COVID-19 cases to date. But that also makes some sense; as [The Washington Post reported] (https://www.washingtonpost.com/religion/2020/04/17/cell-phone-data-coronavirus-churchgoers-home-easter/), mobile location data shows that stay-at-home orders were actually pretty effective at keeping churchgoers home on Easter -- one of the biggest attendance days of the year for Christian churches. But some states are starting to lift their stay-at-home orders, so is it possible that some counties could be vulnerable to new outbreaks once people start to return to churches?
+So maybe there's not a large correlation between religious adherence or congregations per 10,000 residents and confirmed COVID-19 cases to date. But that also makes some sense; as [The Washington Post reported](https://www.washingtonpost.com/religion/2020/04/17/cell-phone-data-coronavirus-churchgoers-home-easter/), mobile location data shows that stay-at-home orders were actually pretty effective at keeping churchgoers home on Easter -- one of the biggest attendance days of the year for Christian churches. But some states are starting to lift their stay-at-home orders, so is it possible that some counties could be vulnerable to new outbreaks once people start to return to churches?
 
 Let's start by using what we've already looked at to identify a subset of counties: ones with high rates of religious adherence and lower numbers of congregations per 10,000 residents. How many of the ~2,800 counties in our current dataset are in the top 20% of religious adherents and the bottom 20% of congregations per 10K?
 
@@ -247,11 +247,146 @@ high_adherence_low_congregation <- county_covid_religion %>%
   filter(religious_adherence >= quantile(county_covid_religion$religious_adherence, probs = 0.80)) %>%
   filter(congregations_per_10k <= quantile(county_covid_religion$congregations_per_10k, probs = 0.20)) %>%
   filter(cases_per_10k <= quantile(county_covid_religion$cases_per_10k, probs = 0.85)) %>%
-  select(county, state, population, religious_adherence, congregations, congregations_per_10k, fips, key) %>%
-  arrange(desc(religious_adherence))
+  mutate(avg_congregation_size = population / congregations) %>%
+  select(county, state, population, religious_adherence, congregations, avg_congregation_size, congregations_per_10k, fips, key) %>%
+  arrange(congregations_per_10k)
 
 high_adherence_low_congregation
 
 ```
 
-**FINDINGS BASED ON THE COUNTIES THAT RESULT FROM THIS ANALYSIS**
+Again, there a couple of interesting findings, like Bristol County, RI, which is a heavily Catholic county with an average congregation size of nearly 2,000 people. But it still might not be the best story.
+
+## Untangling COVID's racial disparities
+
+We know from [data provided by the CDC] (https://www.cdc.gov/coronavirus/2019-ncov/need-extra-precautions/racial-ethnic-minorities.html) that COVID-19 has disproportionately affected black communities, both in terms of confirmed cases and deaths. Let's try some of this analysis again, but with a focus on heavily African American counties. We need to start by identifying those counties. At the 2010 census, 12.6% of the U.S. population reported as Black or African American, so let's use double that number -- 25% and up -- as a guidepost.
+
+```{r}
+
+# Pull in African American population at county level
+county_geodata_aa <- get_acs(geography = "county",
+              variables = "B02001_003", geometry = TRUE) %>%
+  rename(aa_pop=estimate)
+
+# Join African American population to county table, filter on % African American >= 25
+county_covid_religion_aa <- county_covid_religion %>%
+  inner_join(county_geodata_aa, by=c("fips" = "GEOID")) %>%
+  mutate(aa_percentage = aa_pop/population) %>%
+  filter(aa_percentage >= .25)
+
+```
+
+Is there a stronger relationship between religious adherence and COVID cases in heavily African American counties?
+
+```{r}
+
+ggplot(county_covid_religion_aa) +
+  geom_point(aes(religious_adherence, cases_per_10k)) +
+  labs(x="Religious adherence %", y="Peak COVID cases per 10,000 people", caption = "Source: NYT COVID-19 data and the Association of Religion Data Archives", fill="key") +
+  scale_y_continuous(labels = comma) +
+  scale_x_continuous(labels = comma) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_smooth(aes(religious_adherence, cases_per_10k), method = "lm", se = FALSE)
+
+```
+
+And we'll test the correlation.
+
+```{r}
+
+# Test the relationship
+correlation_covid_adherents_aa <- county_covid_religion_aa %>%
+  select(religious_adherence, cases_per_10k)
+
+cor.test(correlation_covid_adherents_aa$religious_adherence, correlation_covid_adherents_aa$cases_per_10k)
+
+```
+
+So there's still no serious connection between adherence and COVID in heavily African American counties. Let's check on the relationship between congregations per 10,000 and COVID.
+
+```{r}
+
+ggplot(county_covid_religion_aa) +
+  geom_point(aes(congregations_per_10k, cases_per_10k)) +
+  labs(x="Congregations per 10,000 people", y="Peak COVID cases per 10,000 people", caption = "Source: NYT COVID-19 data and the Association of Religion Data Archives", fill="key") +
+  scale_y_continuous(labels = comma) +
+  scale_x_continuous(labels = comma) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_smooth(aes(religious_adherence, cases_per_10k), method = "lm", se = FALSE)
+
+```
+
+And we'll test the correlation.
+
+```{r}
+
+# Test the relationship
+correlation_covid_congregations_aa <- county_covid_religion_aa %>%
+  select(congregations_per_10k, cases_per_10k)
+
+cor.test(correlation_covid_congregations_aa$congregations_per_10k, correlation_covid_congregations_aa$cases_per_10k)
+
+```
+
+## Conclusions
+
+So it turns out that when we focus on heavily African American communities, we actually lose the slight negative correlation we had between number of congregations and COVID outbreaks nationwide.
+
+There are a few outliers that I want to go back and look at, though. Let's redraw the nationwide plot of adherence vs. COVID:
+
+```{r}
+
+ggplot(county_covid_religion) +
+  geom_point(aes(religious_adherence, cases_per_10k)) +
+  labs(x="Religious adherence %", y="Peak COVID cases per 10,000 people", caption = "Source: NYT COVID-19 data and the Association of Religion Data Archives", fill="key") +
+  scale_y_continuous(labels = comma) +
+  scale_x_continuous(labels = comma) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_smooth(aes(religious_adherence, cases_per_10k), method = "lm", se = FALSE)
+
+```
+
+There appear to be about five or so counties with peaks above roughly 400 cases per 10,000 residents, and they come from different places on the scale of religious adherence:
+
+```{r}
+
+# Filter down to counties with case peaks above 400 per 10,000 residents
+county_covid_400 <- county_covid_religion %>%
+  filter(cases_per_10k >= 400)
+
+# Plot religious adherence against case peaks for those counties (no trend line)
+ggplot(county_covid_400) +
+  geom_point(aes(religious_adherence, cases_per_10k)) +
+  labs(x="Religious adherence %", y="Peak COVID cases per 10,000 people", caption = "Source: NYT COVID-19 data and the Association of Religion Data Archives", fill="key") +
+  scale_y_continuous(labels = comma) +
+  scale_x_continuous(labels = comma) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+Okay, so it's five counties. Let's see what they look like when we plot cases against congregations instead:
+
+```{r}
+
+# Plot congregations against case peaks for the five counties with cases per 10K >= 400 (no trend line)
+ggplot(county_covid_400) +
+  geom_point(aes(congregations_per_10k, cases_per_10k)) +
+  labs(x="Congregations per 10,000 people", y="Peak COVID cases per 10,000 people", caption = "Source: NYT COVID-19 data and the Association of Religion Data Archives", fill="key") +
+  scale_y_continuous(labels = comma) +
+  scale_x_continuous(labels = comma) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+Nothing in the single digits, but no outrageously high numbers either. Let's actually identify what the five counties are so we can do a little research and see if there are common threads connecting them:
+
+```{r}
+
+county_covid_400 %>%
+  ungroup() %>%
+  select(county, state, population, religious_adherence, congregations_per_10k, case_peak, cases_per_10k) %>%
+  arrange(desc(cases_per_10k))
+
+```
+
+The closest thing I can find to a thread tying these five counties together is that three of them -- Trousdale and Bledsoe counties in Tennessee and Lincoln County, Arkansas -- are home to prisons.
