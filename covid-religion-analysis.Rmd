@@ -29,7 +29,7 @@ library(ggthemes)
 
 ```
 
-Then we'll load in county-level COVID-19 data from The New York Times and data from the Association of Religion Data Archives' 2010 Religious Congregation Membership Study. (Ideally we'd have newer religion data than 2010, but the survey is conducted every 10 years.) We'll also grab shifted geodata from the census -- we'll use it to look at maps later.
+Then we'll load in county-level COVID-19 data from The New York Times and data from the Association of Religion Data Archives' 2010 Religious Congregation Membership Study. (Ideally we'd have newer religion data than 2010, but the survey is conducted every 10 years.) We'll also grab geodata from the census -- we'll use it to look at maps later.
 
 ```{r}
 
@@ -259,7 +259,7 @@ Again, there a couple of interesting findings, like Bristol County, RI, which is
 
 ## Untangling COVID's racial disparities
 
-We know from [data provided by the CDC] (https://www.cdc.gov/coronavirus/2019-ncov/need-extra-precautions/racial-ethnic-minorities.html) that COVID-19 has disproportionately affected black communities, both in terms of confirmed cases and deaths. Let's try some of this analysis again, but with a focus on heavily African American counties. We need to start by identifying those counties. At the 2010 census, 12.6% of the U.S. population reported as Black or African American, so let's use double that number -- 25% and up -- as a guidepost.
+We know from [data provided by the CDC](https://www.cdc.gov/coronavirus/2019-ncov/need-extra-precautions/racial-ethnic-minorities.html) that COVID-19 has disproportionately affected black communities, both in terms of confirmed cases and deaths. Let's try some of this analysis again, but with a focus on heavily African American counties. We need to start by identifying those counties. At the 2010 census, 12.6% of the U.S. population reported as Black or African American, so let's use double that number -- 25% and up -- as a guidepost.
 
 ```{r}
 
@@ -330,9 +330,9 @@ cor.test(correlation_covid_congregations_aa$congregations_per_10k, correlation_c
 
 ## Conclusions
 
-So it turns out that when we focus on heavily African American communities, we actually lose the slight negative correlation we had between number of congregations and COVID outbreaks nationwide.
+So it turns out that no matter how you slice it, there hasn't been any strong connection between Americans' religious habits and their likelihood of catching COVID-19 -- though it is still certainly a possibility that as states reopen and people return to their places of worship, they could turn out to be sites where a second wave of the disease spreads.
 
-There are a few outliers that I want to go back and look at, though. Let's redraw the nationwide plot of adherence vs. COVID:
+But there are a few outliers that bear a second look. Let's redraw the nationwide plot of adherence vs. COVID:
 
 ```{r}
 
@@ -389,4 +389,4 @@ county_covid_400 %>%
 
 ```
 
-The closest thing I can find to a thread tying these five counties together is that three of them -- Trousdale and Bledsoe counties in Tennessee and Lincoln County, Arkansas -- are home to prisons.
+Three of these counties -- Trousdale and Bledsoe counties in Tennessee and Lincoln County, Arkansas -- are Southern counties that are home to prisons. Perhaps prisons, which obviously are not able to shut down or operate remotely in the same way that churches are, are the real spreading grounds.
